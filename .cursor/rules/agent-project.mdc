@@ -1,0 +1,170 @@
+---
+description: "Agent project rules — workflow, task tracking, agent code conventions"
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Agent Project Rules
+
+> These rules apply to all AI coding assistants working on this project.
+
+---
+
+## 1. Project Awareness & Context
+
+**At the start of every new conversation:**
+1. Read `master-plan.md` to understand architecture, phases, tech stack, and constraints
+2. Read `CLAUDE.md` for project-specific conventions and global development rules
+3. Read `PRD.md` for product requirements and feature scope
+4. Check `TASK.md` for the current task backlog — if the task you're about to work on isn't listed, add it with a brief description and today's date
+5. If phase plans exist in `plans/`, read the relevant phase plan before starting implementation
+
+**Use consistent naming conventions, file structure, and architecture patterns** as described in `master-plan.md` and `CLAUDE.md`.
+
+---
+
+## 2. Task Tracking (TASK.md)
+
+`TASK.md` is a lightweight, always-current task backlog. It works alongside the formal phase tracking in `plans/[phase]-progress.md`.
+
+**When to update TASK.md:**
+- **Before starting work:** Check if your task is listed. If not, add it.
+- **After completing a task:** Mark it done immediately with today's date.
+- **When discovering new work:** Add sub-tasks or TODOs under a "Discovered During Work" section.
+- **When finding bugs:** Log them under a "Bugs" section with a brief description.
+
+**TASK.md structure:**
+```markdown
+# Task Backlog
+
+## Active
+- [ ] [Task description] — [date added]
+
+## Discovered During Work
+- [ ] [Task or sub-task discovered mid-implementation] — [date]
+
+## Bugs
+- [ ] [Bug description] — [date found]
+
+## Completed
+- [x] [Task description] — [date completed]
+```
+
+> **Relationship to phase tracking:** `plans/[phase]-progress.md` tracks formal phase execution. `TASK.md` tracks everything else — ad-hoc tasks, bugs, ideas, discoveries.
+
+---
+
+## 3. Agent Code Structure & Modularity
+
+**Organize agent code into clearly separated modules**, grouped by responsibility:
+
+| File | Purpose |
+|------|---------|
+| `agent.py` | Agent definition, model config, execution entry point |
+| `tools.py` | Tool functions the agent can call (each tool = pure function) |
+| `prompts.py` | System prompts and prompt templates (string constants) |
+| `models.py` | Pydantic models for tool inputs/outputs and agent state |
+| `dependencies.py` | Dependency injection (API clients, DB connections, settings) |
+
+**Rules:**
+- **Agent code files should stay under 500 lines** — split into sub-modules if approaching this limit
+- **General code files should stay under 1000 lines** — refactor into modules when approaching the limit
+- **Use clear, consistent imports** — prefer relative imports within packages (e.g., `from .tools import search_web`)
+- **System prompts NEVER go inline** — always in `prompts.py` as named string constants
+- **Each tool function must be independently testable** — pure function with typed inputs/outputs, no hidden state
+- **One agent per directory** — if the project has multiple agents, each gets its own directory under `agents/`
+
+---
+
+## 4. Testing & Reliability
+
+- **Always create Pytest unit tests for new features** (functions, classes, routes, agent tools)
+- **After updating any logic**, check whether existing unit tests need to be updated. If so, do it.
+- **Tests should live in a `/tests` folder** mirroring the main app structure
+- For each function, include at least:
+  - 1 test for expected use (happy path)
+  - 1 edge case
+  - 1 failure case
+- **Always test individual functions for agent tools** — each tool gets its own test coverage
+- **Always mock external services** — LLM API calls, database queries, third-party APIs. Never hit real services in tests.
+
+---
+
+## 5. Task Completion Protocol
+
+After completing any implementation task:
+1. Mark the task as done in `TASK.md` with today's date
+2. If the task was part of a phase, update `plans/[phase]-progress.md`
+3. Update `README.md` if: new features added, dependencies changed, setup steps modified, or new env vars introduced
+4. Add any newly discovered sub-tasks or follow-ups to `TASK.md` under "Discovered During Work"
+
+---
+
+## 6. Style & Conventions
+
+- **Python** is the primary language for agent code; **TypeScript** for frontend
+- **Python:** Follow PEP8, use type hints everywhere, format with **Ruff** (line length 120)
+- **TypeScript:** Strict mode, Biome for linting/formatting
+- **Use `pydantic` for all data validation** in Python code
+- Write **docstrings for every function** using Google style:
+  ```python
+  def example(param1: str) -> bool:
+      """Brief summary.
+
+      Args:
+          param1: Description of the parameter.
+
+      Returns:
+          Description of the return value.
+      """
+  ```
+- Use verbose, intention-revealing names: `entity_id`, `entity_name` (not `id`, `name`)
+- Use structured JSON logging with `fix_suggestion` in all error logs
+
+---
+
+## 7. Documentation & Explainability
+
+- **Update `README.md`** when new features are added, dependencies change, or setup steps are modified
+- **Comment non-obvious code** and ensure everything is understandable to a mid-level developer
+- When writing complex logic, **add an inline `# Reason:` comment** explaining the *why*, not just the *what*
+- Every agent's `prompts.py` should have a module-level docstring explaining the agent's purpose
+
+---
+
+## 8. AI Behavior Rules
+
+- **Never assume missing context.** Ask questions if uncertain.
+- **Always confirm file paths & module names exist** before importing or referencing them
+- **Never delete or overwrite existing code** unless explicitly instructed to or if part of a task from `TASK.md`
+- **Never hardcode API keys or secrets** — use `.env` files and reference via `os.environ` or `pydantic_settings`
+- **State assumptions explicitly** — proceed only if low-risk; ask for clarification otherwise
+
+---
+
+## 9. Environment Variable Safety
+
+- Never hardcode API keys, secrets, or credentials in source code
+- Never log or print environment variable values
+- Always use `.env` files (excluded from git) and reference via `os.environ` or `pydantic_settings`
+- Always provide a `.env.example` with placeholder values
+- Implement environment variable setup yourself — do not trust the AI assistant with actual secret values
+
+---
+
+## 10. Planning Pipeline Reference
+
+This project uses a structured planning pipeline. Key artifacts:
+
+| Artifact | Purpose |
+|----------|---------|
+| `documents/cmo-thesis.md` | Market research, competitive analysis, product strategy |
+| `master-plan.md` | Technical architecture, phasing, tech stack decisions |
+| `PRD.md` | Full product requirements document |
+| `CLAUDE.md` | Project-specific coding rules |
+| `plans/[phase-name].md` | Detailed implementation plan per phase |
+| `plans/[phase-name]-progress.md` | Phase execution progress tracker |
+| `TASK.md` | Lightweight running task backlog |
+| `reference/` | External documentation, API guides, patterns |
+
+**No code is written until ALL planning steps are complete.**
