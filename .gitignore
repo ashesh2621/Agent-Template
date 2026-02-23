@@ -40,3 +40,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# OpenMemory - IDE/Assistant specific rules
+CLAUDE.md
